@@ -108,7 +108,7 @@ class Simulator(object):
             self.log_writer = csv.DictWriter(self.log_file, fieldnames=self.log_fields)
             self.log_writer.writeheader()
 
-    def run(self, tolerance=0.05, n_test=0):
+    def run(self, training_trials=20,tolerance=0.05, n_test=0,update_epsilon_method=1):
         """ Run a simulation of the environment. 
 
         'tolerance' is the minimum epsilon necessary to begin testing (if enabled)
@@ -117,10 +117,8 @@ class Simulator(object):
         Note that the minimum number of training trials is always 20. """
 
         self.quit = False
-
         # Get the primary agent
         a = self.env.primary_agent
-
         total_trials = 1
         testing = False
         trial = 1
@@ -129,7 +127,7 @@ class Simulator(object):
 
             # Flip testing switch
             if not testing:
-                if total_trials > 20: # Must complete minimum 20 training trials
+                if total_trials > training_trials: # Must complete minimum 20 training trials
                     if a.learning:
                         if a.epsilon < tolerance: # assumes epsilon decays to 0
                             testing = True
@@ -152,8 +150,7 @@ class Simulator(object):
                 print "| Training trial {}".format(trial)
 
             print "\-------------------------"
-            print 
-
+            print
             self.env.reset(testing)
             self.current_time = 0.0
             self.last_updated = 0.0
@@ -219,7 +216,9 @@ class Simulator(object):
             else:
                 print "\nTrial Aborted!"
                 print "Agent did not reach the destination."
-
+            # update epsilon
+            if not testing:
+                a.epsilon = a.update_epsilon(method=update_epsilon_method,cur_trial=trial)
             # Increment
             total_trials = total_trials + 1
             trial = trial + 1
