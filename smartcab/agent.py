@@ -55,7 +55,7 @@ class LearningAgent(Agent):
         ## TO DO ##
         ###########
         # Set 'state' as a tuple of relevant data for the agent        
-        state = (waypoint,tuple(zip(inputs.keys(),inputs.values())))
+        state = (waypoint,inputs['light'],inputs['left'],inputs['right'],inputs['oncoming'])
 
         return state
 
@@ -70,8 +70,7 @@ class LearningAgent(Agent):
         # Calculate the maximum Q-value of all actions for a given state
 
         maxQ = max(self.Q[state].values())
-        maxQ_act = max(self.Q[state],key=self.Q[state].get)
-        return maxQ,maxQ_act
+        return maxQ
 
 
     def createQ(self, state):
@@ -83,10 +82,11 @@ class LearningAgent(Agent):
         # When learning, check if the 'state' is not in the Q-table
         # If it is not, create a new dictionary for that state
         #   Then, for each action available, set the initial Q-value to 0.0
-
-        if state not in self.Q.keys():
-            self.Q[state] = dict(zip(self.valid_actions, [0.0, 0.0, 0.0, 0.0]))
-        return
+        if self.learning:
+            if state not in self.Q.keys():
+                #self.Q[state] = dict(zip(self.valid_actions, [0.0, 0.0, 0.0, 0.0]))
+                self.Q.setdefault(state, {action: 0.0 for action in self.valid_actions})
+            return
 
 
     def choose_action(self, state):
@@ -105,11 +105,15 @@ class LearningAgent(Agent):
         #   Otherwise, choose an action with the highest Q-value for the current state
         if self.learning:
             if np.random.random(1) < self.epsilon:
-                action = self.valid_actions[np.random.randint(0,4)]
+                action = np.random.choice(self.valid_actions)
             else:
-                action = self.get_maxQ(state)[1]
-        else :
-            action = self.valid_actions[np.random.randint(0,4)]
+                max_actions = list()
+                for action in self.Q[state]:
+                    if self.Q[state][action] == self.get_maxQ(state):
+                        max_actions.append(action)
+                action = np.random.choice(max_actions)
+        else:
+            action = np.random.choice(self.valid_actions)
         return action
 
 
@@ -123,7 +127,7 @@ class LearningAgent(Agent):
         ###########
         # When learning, implement the value iteration update rule
         #   Use only the learning rate 'alpha' (do not use the discount factor 'gamma')
-        self.Q[state][action] = self.alpha*(reward + self.get_maxQ(state)[0])
+        self.Q[state][action] = (1-self.alpha)*self.Q[state][action]+self.alpha*reward
         return
 
 
@@ -142,14 +146,15 @@ class LearningAgent(Agent):
         
     def update_epsilon(self,method,cur_trial=1):
         epsilon=self.epsilon
+        a = 0.5
         if method == 1:
-            epsilon = epsilon -0.02
+            epsilon = epsilon -0.0006
         elif method == 2:
-            epsilon = self.alpha**(cur_trial*0.002)
+            epsilon = a**(cur_trial*0.005)
         elif method == 3:
-            epsilon = 1.0/(cur_trial**2)
+            epsilon = 1.0/((cur_trial**2)*0.00003)
         elif method == 4:
-            epsilon = math.e**(-self.alpha*cur_trial)
+            epsilon = math.e**(-a*cur_trial)
         return epsilon
 
 
@@ -185,7 +190,7 @@ def run():
     #   display      - set to False to disable the GUI if PyGame is enabled
     #   log_metrics  - set to True to log trial and simulation results to /logs
     #   optimized    - set to True to change the default log file name
-    sim = Simulator(env,update_delay=0.01,log_metrics=True,display=False,optimized=True)
+    sim = Simulator(env,update_delay=0.5,log_metrics=True,display=True,optimized=True)
     
     ##############
     # Run the simulator
@@ -194,7 +199,7 @@ def run():
     #   n_test     - discrete number of testing trials to perform, default is 0
     #   update_epsilon_method -update epsilon by different method.(see Agent.update_epsilon())
 
-    sim.run(tolerance=0.02,n_test=20,training_trials=2500,update_epsilon_method=2)
+    sim.run(tolerance=0.02,n_test=50,training_trials=2000,update_epsilon_method=2)
 
 
 if __name__ == '__main__':
