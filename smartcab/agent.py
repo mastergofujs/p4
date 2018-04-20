@@ -83,9 +83,8 @@ class LearningAgent(Agent):
         # If it is not, create a new dictionary for that state
         #   Then, for each action available, set the initial Q-value to 0.0
         if self.learning:
-            if state not in self.Q.keys():
-                #self.Q[state] = dict(zip(self.valid_actions, [0.0, 0.0, 0.0, 0.0]))
-                self.Q.setdefault(state, {action: 0.0 for action in self.valid_actions})
+            #self.Q[state] = dict(zip(self.valid_actions, [0.0, 0.0, 0.0, 0.0]))
+            self.Q.setdefault(state, {action: 0.0 for action in self.valid_actions})
             return
 
 
@@ -104,7 +103,7 @@ class LearningAgent(Agent):
         # When learning, choose a random action with 'epsilon' probability
         #   Otherwise, choose an action with the highest Q-value for the current state
         if self.learning:
-            if np.random.random(1) < self.epsilon:
+            if np.random.random() < self.epsilon:
                 action = np.random.choice(self.valid_actions)
             else:
                 max_actions = list()
@@ -127,7 +126,8 @@ class LearningAgent(Agent):
         ###########
         # When learning, implement the value iteration update rule
         #   Use only the learning rate 'alpha' (do not use the discount factor 'gamma')
-        self.Q[state][action] = (1-self.alpha)*self.Q[state][action]+self.alpha*reward
+        if self.learning:
+            self.Q[state][action] = (1-self.alpha)*self.Q[state][action]+self.alpha*reward
         return
 
 
